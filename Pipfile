@@ -1,0 +1,24 @@
+[[source]]
+name = "pypi"
+url = "https://pypi.python.org/simple"
+verify_ssl = true
+
+[requires]
+python_version = "3.12"
+
+[packages]
+llama-index = "*"
+chromadb = "*"
+llama-index-vector-stores-chroma = "*"
+pymupdf = "*"
+sentence-transformers = "*"
+llama-index-embeddings-huggingface = "*"
+
+[dev-packages]
+black = "==22.3.0"
+flake8 = "*"
+isort = "*"
+mypy = "*"
+pre-commit = "*"
+pytest = "*"
+pytest-cov = "*"
