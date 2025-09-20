@@ -1,34 +1,43 @@
 
-# RAG Chat with Ollama & ChromaDB
+# RAG Chat with Ollama & ChromaDB - Web Interface
 
 This project implements a **Retrieval-Augmented Generation (RAG)** pipeline using:
 - **Ollama** as the LLM for answering questions
 - **ChromaDB** for vector storage and retrieval
 - **LlamaIndex** for creating and managing document indexes
 - **HuggingFace Embeddings** for semantic search
+- **Flask Web Interface** for easy interaction
 
-It allows users to **chat with a knowledge base** (e.g., company profile PDF) using a local Ollama model.
+It allows users to **chat with a knowledge base** through both CLI and web interface using local Ollama models.
 
 ---
 
 ## **Features**
-✔ Extracts text from PDF or TXT files  
-✔ Builds a vector index using ChromaDB  
-✔ Uses HuggingFace embeddings for semantic similarity  
-✔ Integrates with Ollama to generate context-aware answers  
-✔ Simple CLI-based chat interface  
+✔ **Web Interface** - Modern, responsive chat interface  
+✔ **Multiple Models** - Support for Llama 3, Mistral, Code Llama, etc.  
+✔ **Custom Knowledge Bases** - Upload and process your own documents  
+✔ **Real-time Chat** - Interactive conversations with typing indicators  
+✔ **Local Processing** - Everything runs on your machine  
+✔ **Drag & Drop Upload** - Easy document management  
+✔ **PDF/TXT/DOC Support** - Multiple file format support  
 
 ---
 
 ## **Project Structure**
 ```
-rag/
-├── module/
-│   ├── VectorConverter.py       # Handles file parsing and ChromaDB indexing
-│   ├── ModelConnector.py        # Handles API calls to Ollama
-│   ├── RagOllama.py             # Main RAG pipeline logic
-│
-├── app.py                      # CLI interface for chatting with the knowledge base
+rag_ollama/
+├── rag/
+│   ├── module/
+│   │   ├── VectorConverter.py   # Handles file parsing and ChromaDB indexing
+│   │   ├── ModelConnector.py    # Handles API calls to Ollama
+│   │   └── RagOllama.py         # Main RAG pipeline logic
+│   ├── __main__.py              # Main entry point (CLI + Web server)
+│   └── app.py                   # CLI interface functions
+├── web/
+│   └── index.html               # Web chat interface
+├── uploads/                     # Uploaded knowledge base files
+├── chroma_store/               # ChromaDB vector storage
+└── Pipfile                     # Dependencies
 ```
 
 ---
@@ -37,39 +46,75 @@ rag/
 
 ### **Prerequisites**
 - Python 3.9+
-- [Ollama](https://ollama.ai/) installed and running locally (`ollama serve`)
-- Ollama model (e.g., `llama3`) downloaded:  
+- [Ollama](https://ollama.ai/) installed and running locally
+- Recommended Ollama models:
   ```bash
   ollama pull llama3
+  ollama pull mistral
+  ollama pull codellama
   ```
 
 ### **Install Dependencies**
+
+**Option 1: Using pipenv (recommended)**
 ```bash
-pip install pymupdf chromadb llama-index sentence-transformers requests
+pipenv install
+pipenv shell  # Activate virtual environment
+```
+
+**Option 2: Using pip**
+```bash
+pip install -r requirements.txt
+```
+
+**Option 3: Manual installation**
+```bash
+# Core dependencies
+pip install llama-index chromadb llama-index-vector-stores-chroma pymupdf sentence-transformers llama-index-embeddings-huggingface
+
+# Web interface dependencies (optional for CLI-only usage)
+pip install flask flask-cors werkzeug requests
+
+# Fix compatibility issues
+pip install "numpy>=1.24.0,<2.0.0" "torch>=2.0.0"
 ```
 
 ---
 
 ## **Usage**
 
-### **1. Start Ollama**
-Make sure Ollama server is running:
-```bash
-ollama serve
-```
+### **Web Interface (Recommended)**
 
-### **2. Add Your Knowledge Base**
-Place your PDF or TXT file in the project root (e.g., `novatech_company_profile.pdf`).
+1. **Start Ollama:**
+   ```bash
+   ollama serve
+   ```
 
-### **3. Run the Chat**
+2. **Start the web server:**
+   ```bash
+   python -m rag --mode web
+   ```
+   
+   Optional parameters:
+   ```bash
+   python -m rag --mode web --port 8080 --debug
+   ```
+
+3. **Open your browser:**
+   Navigate to `http://localhost:5000` (or your custom port)
+
+4. **Configure and chat:**
+   - Select an Ollama model (Llama 3, Mistral, etc.)
+   - Create custom knowledge bases by uploading documents
+   - Start chatting with your documents!
+
+### **CLI Interface**
+
+For the original CLI experience (default mode):
 ```bash
 python -m rag
-```
-
-Example interaction:
-```
-RAG Chat with NovaTech Knowledge Base (type 'exit' to quit)
-You: What does NovaTech specialize in?
+# or explicitly
+python -m rag --mode cli
 ```
 
 ---

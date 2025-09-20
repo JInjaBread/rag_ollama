@@ -1,0 +1,694 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Chatbot Interface</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        .chat-container {
+            height: 500px;
+            overflow-y: auto;
+            border: 1px solid #dee2e6;
+            border-radius: 0.375rem;
+            background-color: #f8f9fa;
+        }
+        .message {
+            margin-bottom: 1rem;
+        }
+        .user-message {
+            text-align: right;
+        }
+        .bot-message {
+            text-align: left;
+        }
+        .message-bubble {
+            display: inline-block;
+            max-width: 70%;
+            padding: 0.75rem 1rem;
+            border-radius: 1rem;
+            word-wrap: break-word;
+        }
+        .user-bubble {
+            background-color: #007bff;
+            color: white;
+        }
+        .bot-bubble {
+            background-color: #e9ecef;
+            color: #212529;
+        }
+        .kb-list-item {
+            border: 1px solid #dee2e6;
+            border-radius: 0.375rem;
+            padding: 0.5rem;
+            margin-bottom: 0.5rem;
+            background-color: #f8f9fa;
+        }
+        .upload-area {
+            border: 2px dashed #dee2e6;
+            border-radius: 0.375rem;
+            padding: 2rem;
+            text-align: center;
+            background-color: #f8f9fa;
+            transition: border-color 0.3s ease;
+        }
+        .upload-area:hover {
+            border-color: #007bff;
+        }
+        .upload-area.dragover {
+            border-color: #007bff;
+            background-color: #e7f3ff;
+        }
+    </style>
+</head>
+<body>
+    <div class="container mt-4">
+        <div class="row">
+            <div class="col-12">
+                <h1 class="text-center mb-4">
+                    <i class="fas fa-robot text-primary"></i> Chatbot Interface
+                </h1>
+            </div>
+        </div>
+
+        <div class="row">
+            <div class="col-md-4">
+                <div class="card mb-3">
+                    <div class="card-header">
+                        <h5><i class="fas fa-cog"></i> Configuration</h5>
+                    </div>
+                    <div class="card-body">
+                        <form id="configForm">
+                            <div class="mb-3">
+                                <label for="modelSelect" class="form-label">Select Model</label>
+                                <select class="form-select" id="modelSelect" required>
+                                    <option value="">Choose a model...</option>
+                                </select>
+                            </div>
+
+                            <div class="mb-3">
+                            <label for="knowledgeBaseSelect" class="form-label">Knowledge Base</label>
+                            <div class="d-flex gap-2">
+                            <select class="form-select" id="knowledgeBaseSelect" required>
+                                <option value="">Choose knowledge base...</option>
+                            </select>
+                            <button type="button" class="btn btn-outline-primary" id="manageKBBtn" title="Manage Knowledge Bases">
+                                <i class="fas fa-database"></i>
+                            </button>
+                            </div>
+                            </div>
+                            <div class="mb-3">
+                                <label for="temperatureRange" class="form-label">Temperature: <span id="temperatureValue">0.7</span></label>
+                                <input type="range" class="form-range" id="temperatureRange" min="0" max="1" step="0.1" value="0.7">
+                            </div>
+
+                            <button type="button" class="btn btn-success w-100" id="saveConfig">
+                                <i class="fas fa-save"></i> Save Configuration
+                            </button>
+                        </form>
+                    </div>
+                </div>
+
+                <div class="card" id="knowledgeBaseCard" style="display: none;">
+                    <div class="card-header d-flex justify-content-between align-items-center">
+                        <h5><i class="fas fa-database"></i> Knowledge Base Manager</h5>
+                        <button class="btn btn-outline-secondary btn-sm" id="closeKBManager">
+                            <i class="fas fa-times"></i>
+                        </button>
+                    </div>
+                    <div class="card-body">
+                        <ul class="nav nav-tabs" id="kbTabs" role="tablist">
+                            <li class="nav-item" role="presentation">
+                                <button class="nav-link active" id="add-kb-tab" data-bs-toggle="tab" data-bs-target="#add-kb" type="button" role="tab">
+                                    <i class="fas fa-plus"></i> Add KB
+                                </button>
+                            </li>
+                            <li class="nav-item" role="presentation">
+                                <button class="nav-link" id="manage-kb-tab" data-bs-toggle="tab" data-bs-target="#manage-kb" type="button" role="tab">
+                                    <i class="fas fa-list"></i> Manage
+                                </button>
+                            </li>
+                        </ul>
+                        <div class="tab-content" id="kbTabContent">
+                            <div class="tab-pane fade show active" id="add-kb" role="tabpanel">
+                                <form id="addKBForm" class="mt-3">
+                                    <div class="mb-3">
+                                        <label for="kbName" class="form-label">Knowledge Base Name</label>
+                                        <input type="text" class="form-control" id="kbName" placeholder="Enter knowledge base name" required>
+                                    </div>
+                                    <div class="mb-3">
+                                        <label for="kbDescription" class="form-label">Description</label>
+                                        <textarea class="form-control" id="kbDescription" rows="3" placeholder="Describe your knowledge base"></textarea>
+                                    </div>
+                                    <div class="mb-3">
+                                        <label class="form-label">Upload Documents</label>
+                                        <div class="upload-area" id="uploadArea">
+                                            <i class="fas fa-cloud-upload-alt fa-2x text-muted mb-2"></i>
+                                            <p class="text-muted mb-2">Drag & drop files here or click to browse</p>
+                                            <input type="file" id="fileInput" multiple accept=".txt,.pdf,.doc,.docx,.md" style="display: none;">
+                                            <button type="button" class="btn btn-outline-primary btn-sm" id="browseFiles">
+                                                <i class="fas fa-folder-open"></i> Browse Files
+                                            </button>
+                                        </div>
+                                        <div id="fileList" class="mt-2"></div>
+                                    </div>
+                                    <button type="submit" class="btn btn-primary w-100">
+                                        <i class="fas fa-plus"></i> Create Knowledge Base
+                                    </button>
+                                </form>
+                            </div>
+                            <div class="tab-pane fade" id="manage-kb" role="tabpanel">
+                                <div class="mt-3">
+                                    <div id="kbList"></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-md-8">
+                <div class="card">
+                    <div class="card-header d-flex justify-content-between align-items-center">
+                        <h5><i class="fas fa-comments"></i> Chat</h5>
+                        <button class="btn btn-outline-secondary btn-sm" id="clearChat">
+                            <i class="fas fa-trash"></i> Clear
+                        </button>
+                    </div>
+                    <div class="card-body p-0">
+                        <div class="chat-container p-3" id="chatContainer">
+                            <div class="text-center text-muted">
+                                <i class="fas fa-robot fa-2x mb-2"></i>
+                                <p>Configure your model and knowledge base to start chatting!</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="card-footer">
+                        <div class="input-group">
+                            <input type="text" class="form-control" id="messageInput" placeholder="Type your message..." disabled>
+                            <button class="btn btn-primary" type="button" id="sendButton" disabled>
+                                <i class="fas fa-paper-plane"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="row mt-4">
+            <div class="col-12">
+                <div class="alert alert-info" id="statusAlert" style="display: none;">
+                    <i class="fas fa-info-circle"></i> <span id="statusMessage"></span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const modelSelect = document.getElementById('modelSelect');
+            const knowledgeBaseSelect = document.getElementById('knowledgeBaseSelect');
+            const temperatureRange = document.getElementById('temperatureRange');
+            const temperatureValue = document.getElementById('temperatureValue');
+            const saveConfigBtn = document.getElementById('saveConfig');
+            const messageInput = document.getElementById('messageInput');
+            const sendButton = document.getElementById('sendButton');
+            const chatContainer = document.getElementById('chatContainer');
+            const clearChatBtn = document.getElementById('clearChat');
+            const statusAlert = document.getElementById('statusAlert');
+            const statusMessage = document.getElementById('statusMessage');
+            const API_BASE = 'http://localhost:8080/api'; // Change if your backend is hosted elsewhere
+            
+            const manageKBBtn = document.getElementById('manageKBBtn');
+            const knowledgeBaseCard = document.getElementById('knowledgeBaseCard');
+            const closeKBManager = document.getElementById('closeKBManager');
+            const addKBForm = document.getElementById('addKBForm');
+            const fileInput = document.getElementById('fileInput');
+            const browseFiles = document.getElementById('browseFiles');
+            const uploadArea = document.getElementById('uploadArea');
+            const fileList = document.getElementById('fileList');
+            const kbList = document.getElementById('kbList');
+
+            let isConfigured = false;
+            let customKnowledgeBases = JSON.parse(localStorage.getItem('customKnowledgeBases') || '[]');
+            let selectedFiles = [];
+
+            temperatureRange.addEventListener('input', function() {
+                temperatureValue.textContent = this.value;
+            });
+
+            saveConfigBtn.addEventListener('click', function() {
+                if (modelSelect.value && knowledgeBaseSelect.value) {
+                    isConfigured = true;
+                    messageInput.disabled = false;
+                    sendButton.disabled = false;
+                    
+                    showStatus(`Configuration saved! Model: ${modelSelect.value}, Knowledge Base: ${knowledgeBaseSelect.value}`, 'success');
+                    
+                    chatContainer.innerHTML = `
+                        <div class="text-center text-success">
+                            <i class="fas fa-check-circle fa-2x mb-2"></i>
+                            <p>Ready to chat! Configuration saved successfully.</p>
+                        </div>
+                    `;
+                } else {
+                    showStatus('Please select both model and knowledge base.', 'warning');
+                }
+            });
+
+            sendButton.addEventListener('click', sendMessage);
+            messageInput.addEventListener('keypress', function(e) {
+                if (e.key === 'Enter') {
+                    sendMessage();
+                }
+            });
+
+            clearChatBtn.addEventListener('click', function() {
+                if (isConfigured) {
+                    chatContainer.innerHTML = `
+                        <div class="text-center text-success">
+                            <i class="fas fa-check-circle fa-2x mb-2"></i>
+                            <p>Ready to chat! Configuration saved successfully.</p>
+                        </div>
+                    `;
+                } else {
+                    chatContainer.innerHTML = `
+                        <div class="text-center text-muted">
+                            <i class="fas fa-robot fa-2x mb-2"></i>
+                            <p>Configure your model and knowledge base to start chatting!</p>
+                        </div>
+                    `;
+                }
+            });
+
+            // STREAMING CHAT FUNCTIONS
+            async function sendMessage() {
+                const message = messageInput.value.trim();
+                if (message && isConfigured) {
+                    addMessage(message, 'user');
+                    messageInput.value = '';
+                    
+                    try {
+                        const res = await fetch(`${API_BASE}/chat`, {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({
+                                message: message,
+                                model: modelSelect.value,
+                                knowledgeBase: knowledgeBaseSelect.value,
+                                temperature: parseFloat(temperatureRange.value),
+                                stream: true  // Request streaming
+                            })
+                        });
+
+                        // Check if response is streaming
+                        const contentType = res.headers.get('content-type');
+                        if (contentType && contentType.includes('text/event-stream')) {
+                            // Handle streaming response
+                            await handleStreamingResponse(res);
+                        } else {
+                            // Handle regular JSON response
+                            const data = await res.json();
+                            if (data.response) {
+                                await typeMessage(data.response, 'bot');
+                            } else {
+                                addMessage(`Error: ${data.error || 'Unknown error'}`, 'bot');
+                            }
+                        }
+                    } catch (err) {
+                        console.error(err);
+                        addMessage('⚠️ Failed to connect to the server.', 'bot');
+                    }
+                }
+            }
+
+            async function handleStreamingResponse(response) {
+                const reader = response.body.getReader();
+                const decoder = new TextDecoder();
+                
+                // Create message bubble for streaming content
+                const messageDiv = document.createElement('div');
+                messageDiv.className = 'message bot-message';
+                
+                const bubbleDiv = document.createElement('div');
+                bubbleDiv.className = 'message-bubble bot-bubble';
+                
+                messageDiv.appendChild(bubbleDiv);
+                
+                if (chatContainer.children.length === 1 && chatContainer.children[0].classList.contains('text-center')) {
+                    chatContainer.innerHTML = '';
+                }
+                
+                chatContainer.appendChild(messageDiv);
+                chatContainer.scrollTop = chatContainer.scrollHeight;
+                
+                let fullText = '';
+                
+                try {
+                    while (true) {
+                        const { done, value } = await reader.read();
+                        
+                        if (done) break;
+                        
+                        const chunk = decoder.decode(value);
+                        const lines = chunk.split('\n');
+                        
+                        for (const line of lines) {
+                            if (line.startsWith('data: ')) {
+                                try {
+                                    const data = JSON.parse(line.slice(6));
+                                    if (data.response) {
+                                        fullText += data.response;
+                                        bubbleDiv.textContent = fullText;
+                                        chatContainer.scrollTop = chatContainer.scrollHeight;
+                                        
+                                        // Small delay to simulate typing
+                                        await new Promise(resolve => setTimeout(resolve, 20));
+                                    }
+                                } catch (e) {
+                                    // Skip invalid JSON lines
+                                }
+                            }
+                        }
+                    }
+                } finally {
+                    bubbleDiv.textContent = fullText;
+                }
+            }
+
+            async function typeMessage(text, sender, speed = 30) {
+                const messageDiv = document.createElement('div');
+                messageDiv.className = `message ${sender}-message`;
+                
+                const bubbleDiv = document.createElement('div');
+                bubbleDiv.className = `message-bubble ${sender}-bubble`;
+                
+                messageDiv.appendChild(bubbleDiv);
+                
+                if (chatContainer.children.length === 1 && chatContainer.children[0].classList.contains('text-center')) {
+                    chatContainer.innerHTML = '';
+                }
+                
+                chatContainer.appendChild(messageDiv);
+                
+                // Type out the message character by character
+                for (let i = 0; i <= text.length; i++) {
+                    const currentText = text.slice(0, i);
+                    bubbleDiv.textContent = currentText;
+                    chatContainer.scrollTop = chatContainer.scrollHeight;
+                    
+                    if (i < text.length) {
+                        await new Promise(resolve => setTimeout(resolve, speed));
+                    }
+                }
+            }
+
+            function addMessage(text, sender) {
+                const messageDiv = document.createElement('div');
+                messageDiv.className = `message ${sender}-message`;
+                
+                const bubbleDiv = document.createElement('div');
+                bubbleDiv.className = `message-bubble ${sender}-bubble`;
+                bubbleDiv.textContent = text;
+                
+                messageDiv.appendChild(bubbleDiv);
+                
+                if (chatContainer.children.length === 1 && chatContainer.children[0].classList.contains('text-center')) {
+                    chatContainer.innerHTML = '';
+                }
+                
+                chatContainer.appendChild(messageDiv);
+                chatContainer.scrollTop = chatContainer.scrollHeight;
+            }
+
+            function showStatus(message, type) {
+                statusMessage.textContent = message;
+                statusAlert.className = `alert alert-${type}`;
+                statusAlert.style.display = 'block';
+                
+                setTimeout(() => {
+                    statusAlert.style.display = 'none';
+                }, 3000);
+            }
+
+            async function loadKnowledgeBases() {
+                try {
+                    const response = await fetch(`${API_BASE}/knowledge-bases`);
+                    const data = await response.json();
+                    console.log("Fetched KBs:", data);
+
+                    if (data.error) {
+                        console.error("Error loading KBs:", data.error);
+                        return;
+                    }
+
+                    knowledgeBaseSelect.innerHTML = '<option value="">Choose knowledge base...</option>';
+
+                    // Populate from backend response without "kb_" prefix
+                    (data.knowledgeBases || []).forEach(kb => {
+                        const option = document.createElement("option");
+                        option.value = kb;  // Use the raw knowledge base name
+                        option.textContent = kb;
+                        knowledgeBaseSelect.appendChild(option);
+                    });
+                } catch (err) {
+                    console.error("Failed to fetch KBs:", err);
+                }
+            }
+
+            function updateKnowledgeBaseOptions() {
+                loadKnowledgeBases();
+            }
+
+            function updateKBList() {
+                kbList.innerHTML = '';
+                if (customKnowledgeBases.length === 0) {
+                    kbList.innerHTML = '<p class="text-muted text-center">No custom knowledge bases created yet.</p>';
+                    return;
+                }
+
+                customKnowledgeBases.forEach(kb => {
+                    const kbItem = document.createElement('div');
+                    kbItem.className = 'kb-list-item';
+                    kbItem.innerHTML = `
+                        <div class="d-flex justify-content-between align-items-start">
+                            <div>
+                                <h6 class="mb-1">${kb.name}</h6>
+                                <p class="text-muted mb-1 small">${kb.description || 'No description'}</p>
+                                <small class="text-muted">${kb.files.length} file(s) • Created: ${new Date(kb.created).toLocaleDateString()}</small>
+                            </div>
+                            <button class="btn btn-outline-danger btn-sm" onclick="deleteKB('${kb.id}')">
+                                <i class="fas fa-trash"></i>
+                            </button>
+                        </div>
+                    `;
+                    kbList.appendChild(kbItem);
+                });
+            }
+
+            function displaySelectedFiles() {
+                fileList.innerHTML = '';
+                selectedFiles.forEach((file, index) => {
+                    const fileItem = document.createElement('div');
+                    fileItem.className = 'd-flex justify-content-between align-items-center bg-light p-2 rounded mb-1';
+                    fileItem.innerHTML = `
+                        <span class="small">
+                            <i class="fas fa-file-alt text-primary me-2"></i>
+                            ${file.name} (${(file.size / 1024).toFixed(1)} KB)
+                        </span>
+                        <button type="button" class="btn btn-outline-danger btn-sm" onclick="removeFile(${index})">
+                            <i class="fas fa-times"></i>
+                        </button>
+                    `;
+                    fileList.appendChild(fileItem);
+                });
+            }
+
+            window.removeFile = function(index) {
+                selectedFiles.splice(index, 1);
+                displaySelectedFiles();
+            };
+
+            window.deleteKB = function(kbId) {
+                if (confirm('Are you sure you want to delete this knowledge base?')) {
+                    customKnowledgeBases = customKnowledgeBases.filter(kb => kb.id !== kbId);
+                    localStorage.setItem('customKnowledgeBases', JSON.stringify(customKnowledgeBases));
+                    updateKnowledgeBaseOptions();
+                    updateKBList();
+                    showStatus('Knowledge base deleted successfully!', 'success');
+                }
+            };
+
+            manageKBBtn.addEventListener('click', function() {
+                knowledgeBaseCard.style.display = 'block';
+                updateKBList();
+            });
+
+            closeKBManager.addEventListener('click', function() {
+                knowledgeBaseCard.style.display = 'none';
+            });
+
+            browseFiles.addEventListener('click', function() {
+                fileInput.click();
+            });
+
+            fileInput.addEventListener('change', function(e) {
+                Array.from(e.target.files).forEach(file => {
+                    if (!selectedFiles.find(f => f.name === file.name)) {
+                        selectedFiles.push(file);
+                    }
+                });
+                displaySelectedFiles();
+            });
+
+            uploadArea.addEventListener('click', function() {
+                fileInput.click();
+            });
+
+            uploadArea.addEventListener('dragover', function(e) {
+                e.preventDefault();
+                uploadArea.classList.add('dragover');
+            });
+
+            uploadArea.addEventListener('dragleave', function(e) {
+                e.preventDefault();
+                uploadArea.classList.remove('dragover');
+            });
+
+            uploadArea.addEventListener('drop', function(e) {
+                e.preventDefault();
+                uploadArea.classList.remove('dragover');
+                
+                Array.from(e.dataTransfer.files).forEach(file => {
+                    if (!selectedFiles.find(f => f.name === file.name)) {
+                        selectedFiles.push(file);
+                    }
+                });
+                displaySelectedFiles();
+            });
+
+            addKBForm.addEventListener('submit', async function(e) {
+                e.preventDefault();
+                
+                const name = document.getElementById('kbName').value.trim();
+                const description = document.getElementById('kbDescription').value.trim();
+                
+                if (!name) {
+                    showStatus('Please enter a knowledge base name.', 'warning');
+                    return;
+                }
+                
+                if (selectedFiles.length === 0) {
+                    showStatus('Please select at least one file.', 'warning');
+                    return;
+                }
+                
+                // Show upload progress
+                showStatus('Uploading and processing documents...', 'info');
+                
+                try {
+                    // Create FormData for file upload
+                    const formData = new FormData();
+                    formData.append('name', name);
+                    formData.append('description', description);
+                    
+                    selectedFiles.forEach(file => {
+                        formData.append('files', file);
+                    });
+                    
+                    // Upload to backend
+                    const response = await fetch(`${API_BASE}/knowledge-bases`, {
+                        method: 'POST',
+                        body: formData
+                    });
+                    
+                    if (!response.ok) {
+                        const error = await response.json();
+                        throw new Error(error.error || 'Upload failed');
+                    }
+                    
+                    const result = await response.json();
+                    
+                    // Create local knowledge base entry
+                    const newKB = {
+                        id: 'kb_' + Date.now(),
+                        name: name,
+                        description: description,
+                        files: selectedFiles.map(file => ({
+                            name: file.name,
+                            size: file.size,
+                            type: file.type
+                        })),
+                        created: Date.now()
+                    };
+                    
+                    customKnowledgeBases.push(newKB);
+                    localStorage.setItem('customKnowledgeBases', JSON.stringify(customKnowledgeBases));
+                    
+                    updateKnowledgeBaseOptions();
+                    updateKBList();
+                    
+                    document.getElementById('kbName').value = '';
+                    document.getElementById('kbDescription').value = '';
+                    selectedFiles = [];
+                    displaySelectedFiles();
+                    
+                    showStatus(`Knowledge base "${name}" created and processed successfully!`, 'success');
+                    
+                    document.getElementById('add-kb-tab').click();
+                    
+                } catch (error) {
+                    showStatus(`Error creating knowledge base: ${error.message}`, 'danger');
+                }
+            });
+
+            // Initialize
+            loadKnowledgeBases();
+            loadAvailableModels();
+            checkBackendStatus();
+            
+            async function loadAvailableModels() {
+                try {
+                    const response = await fetch(`${API_BASE}/models`);
+                    if (response.ok) {
+                        const data = await response.json();
+                        const models = data.models || [];
+                        
+                        // Clear existing options except the first one
+                        while (modelSelect.children.length > 1) {
+                            modelSelect.removeChild(modelSelect.lastChild);
+                        }
+                        
+                        // Add model options
+                        models.forEach(model => {
+                            const option = document.createElement('option');
+                            option.value = model.value;
+                            option.textContent = model.name;
+                            modelSelect.appendChild(option);
+                        });
+                    } else {
+                        console.error('Failed to load models');
+                    }
+                } catch (error) {
+                    console.error('Error loading models:', error);
+                }
+            }
+            
+            async function checkBackendStatus() {
+                try {
+                    const response = await fetch(`${API_BASE}/status`);
+                    if (response.ok) {
+                        showStatus('RAG Backend is ready!', 'success');
+                    } else {
+                        showStatus('RAG Backend is not responding. Make sure to start the backend server.', 'warning');
+                    }
+                } catch (error) {
+                    showStatus(`Backend connection failed: ${error.message}`, 'danger');
+                }
+            }
+        });
+    </script>
+</body>
+</html>
